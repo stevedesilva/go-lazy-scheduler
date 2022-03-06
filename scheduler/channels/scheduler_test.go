@@ -1,20 +1,24 @@
 package scheduler
 
 import (
-"github.com/stretchr/testify/assert"
-"testing"
+	"github.com/stretchr/testify/assert"
+	"runtime"
+	"testing"
+	"time"
 )
+
 // run `go test -bench=.` in
 func BenchmarkLazyScheduler1000Jobs(b *testing.B) {
-	LazySchedulerBenchmark(b,1000)
+	LazySchedulerBenchmark(b, 1000)
 }
 
 func BenchmarkLazyScheduler10000Jobs(b *testing.B) {
-	LazySchedulerBenchmark(b,10000)
+	LazySchedulerBenchmark(b, 10000)
 }
 
 // capture results globally to avoid optimization
-var results = make([]Result,0)
+var results = make([]Result, 0)
+
 func LazySchedulerBenchmark(b *testing.B, count int) {
 	s := New()
 	add := func(n ...int) int {
@@ -25,7 +29,7 @@ func LazySchedulerBenchmark(b *testing.B, count int) {
 		return res
 	}
 	for i := 0; i < count; i++ {
-		s.Add(add, 5,5,5)
+		s.Add(add, 5, 5, 5)
 	}
 	// Our terminal Go will pass a variable `N` into this function numerous times until it gets a relatively consistent result
 	for i := 0; i < b.N; i++ {
@@ -48,12 +52,11 @@ func TestScheduler_ShouldAddFunctionsLazily(t *testing.T) {
 	}
 
 	s := New()
-	s.Add(failFn, 1,2,3)
-	s.Add(add, 1,1,1)
+	s.Add(failFn, 1, 2, 3)
+	s.Add(add, 1, 1, 1)
 
 	assert.Equal(t, s.Size(), 2)
 }
-
 
 func TestLazyScheduler_ShouldExecuteFunctionsInScheduledOrder(t *testing.T) {
 	add := func(n ...int) int {
@@ -73,10 +76,10 @@ func TestLazyScheduler_ShouldExecuteFunctionsInScheduledOrder(t *testing.T) {
 	}
 
 	s := New()
-	s.Add(add,2,4,98)
-	s.Add(add,54,22, 29)
-	s.Add(multiply, 2,2,2,2)
-	s.Add(multiply,3,7)
+	s.Add(add, 2, 4, 98)
+	s.Add(add, 54, 22, 29)
+	s.Add(multiply, 2, 2, 2, 2)
+	s.Add(multiply, 3, 7)
 
 	got := s.Run()
 
@@ -89,7 +92,6 @@ func TestLazyScheduler_ShouldExecuteFunctionsInScheduledOrder(t *testing.T) {
 
 }
 
-
 func TestLazyScheduler_ShouldLimitGoRoutines(t *testing.T) {
 	add := func(n ...int) int {
 		res := 0
@@ -99,28 +101,26 @@ func TestLazyScheduler_ShouldLimitGoRoutines(t *testing.T) {
 		return res
 	}
 
-	multiply := func(n ...int) int {
-		res := 1
-		for _, v := range n {
-			res *= v
-		}
-		return res
-	}
+	s := NewWithGr(2)
+	s.Add(add, 2, 4, 98)
+	s.Add(add, 54, 22, 29)
+	s.Add(add, 1, 2, 3)
+	s.Add(add, 4, 5, 5)
+	s.Add(add, 5, 4, 2)
 
-	s := New()
-	s.Add(add,2,4,98)
-	s.Add(add,54,22, 29)
-	s.Add(multiply, 2,2,2,2)
-	s.Add(multiply,3,7)
+
 
 	got := s.Run()
 
 	assertion := assert.New(t)
-	assertion.Equal(4, s.Size())
+	assertion.Equal(5, s.Size())
 	assertion.Equal(104, got[0].Value)
 	assertion.Equal(105, got[1].Value)
-	assertion.Equal(16, got[2].Value)
-	assertion.Equal(21, got[3].Value)
+	assertion.Equal(6, got[2].Value)
+	assertion.Equal(14, got[3].Value)
+	assertion.Equal(11, got[4].Value)
 
 	// check gr number
+	time.Sleep(time.Second * 2)
+	assert.Equal(t, 2, runtime.NumGoroutine())
 }

@@ -22,8 +22,15 @@ func New() Scheduler {
 	return &LazyScheduler{}
 }
 
+func NewWithGr(gr int) Scheduler {
+	return &LazyScheduler{
+		gr: gr,
+	}
+}
+
 type LazyScheduler struct {
 	jobs []job
+	gr int
 }
 
 func (s *LazyScheduler) Size() int {
@@ -50,13 +57,24 @@ func (s *LazyScheduler) Run() []Result {
 	}()
 
 	for i, j := range s.jobs {
-		go func(idx int, job job) {
-			val := job.lazyFn(job.args...)
-			res := jobResult{idx: idx, value: val, err: nil}
-			out <- res
-		}(i, j)
-		// when launching goroutines in a range loop we need to copy the values otherwise the closure will simply
-		// use the last i, j pair from the range loop
+		// if gr set then limit
+		if s.gr > 0 {
+			for i:=0; i < s.Size(); i++ {
+				// create n workers
+
+				// assign workers job
+			}
+
+		} else {
+			// no limit
+			go func(idx int, job job) {
+				val := job.lazyFn(job.args...)
+				res := jobResult{idx: idx, value: val, err: nil}
+				out <- res
+			}(i, j)
+			// when launching goroutines in a range loop we need to copy the values otherwise the closure will simply
+			// use the last i, j pair from the range loop
+		}
 	}
 
 	for i := 0; i < s.Size(); i++ {
@@ -66,3 +84,25 @@ func (s *LazyScheduler) Run() []Result {
 
 	return res
 }
+
+
+type jobData struct {
+	idx int
+	job
+}
+// read only chang
+type workerJobCh <-chan jobData
+
+func createWorker(in workerJobCh, out resultChan, exit chan struct{}) {
+	for {
+		select {
+			case data := <- in:
+				val := data.lazyFn(data.args...)
+				res := jobResult{idx: data.idx, value: val, err: nil}
+				out <- res
+			case <- exit:
+				return
+		}
+	}
+}
+
