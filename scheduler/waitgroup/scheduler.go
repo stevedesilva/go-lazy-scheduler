@@ -43,11 +43,11 @@ func (s *LazyScheduler) Run() []Result {
 	res := make([]Result, s.Size())
 
 	for i, j := range s.jobs {
-		go func(index int, job job){
+		go func(index int, job job) {
 			r := job.lazyFn(job.args...)
 			res[index] = Result{Value: r}
 			defer wg.Done()
-		}(i,j)
+		}(i, j)
 		// when launching goroutines in a range loop we need to copy the values otherwise the closure will simply
 		// use the last i, j pair from the range loop
 	}

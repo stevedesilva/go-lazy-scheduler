@@ -1,10 +1,12 @@
-package scheduler
+package scheduler_test
 
 import (
-	"github.com/stretchr/testify/assert"
+	. "go-lazy-scheduler/scheduler/channels"
 	"runtime"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // run `go test -bench=.` in
@@ -108,9 +110,11 @@ func TestLazyScheduler_ShouldLimitGoRoutines(t *testing.T) {
 	s.Add(add, 4, 5, 5)
 	s.Add(add, 5, 4, 2)
 
-
+	assert.Equal(t, 2, runtime.NumGoroutine())
 
 	got := s.Run()
+	// check gr number
+	time.Sleep(time.Second * 2)
 
 	assertion := assert.New(t)
 	assertion.Equal(5, s.Size())
@@ -120,7 +124,5 @@ func TestLazyScheduler_ShouldLimitGoRoutines(t *testing.T) {
 	assertion.Equal(14, got[3].Value)
 	assertion.Equal(11, got[4].Value)
 
-	// check gr number
-	time.Sleep(time.Second * 2)
 	assert.Equal(t, 2, runtime.NumGoroutine())
 }

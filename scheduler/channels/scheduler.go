@@ -1,5 +1,10 @@
 package scheduler
 
+import (
+	"fmt"
+	"github.com/google/uuid"
+)
+
 type Scheduler interface {
 	Size() int
 	Add(fn lazyFunc, args ...int)
@@ -30,7 +35,7 @@ func NewWithGr(gr int) Scheduler {
 
 type LazyScheduler struct {
 	jobs []job
-	gr int
+	gr   int
 }
 
 func (s *LazyScheduler) Size() int {
@@ -40,7 +45,6 @@ func (s *LazyScheduler) Size() int {
 func (s *LazyScheduler) Add(fn lazyFunc, args ...int) {
 	s.jobs = append(s.jobs, job{lazyFn: fn, args: args})
 }
-
 
 type jobResult struct {
 	idx   int
@@ -52,20 +56,34 @@ type resultChan chan jobResult
 func (s *LazyScheduler) Run() []Result {
 	res := make([]Result, s.Size())
 	out := make(resultChan, s.Size())
-	defer func() {
-		close(out)
-	}()
+	quit := make(chan struct{})
+	defer close(quit)
+	defer close(out)
 
-	for i, j := range s.jobs {
-		// if gr set then limit
-		if s.gr > 0 {
-			for i:=0; i < s.Size(); i++ {
-				// create n workers
+	// if gr set then limit
+	if s.gr > 0 {
+		workers := make([]workerJobCh, 0)
 
-				// assign workers job
+		for i, j := range s.jobs {
+			// create n workers
+			if len(workers) < s.gr {
+				fmt.Printf("i-%d creating ...\n", i)
+
+				workers = append(workers, createWorker(out, quit))
 			}
 
-		} else {
+			// assign worker a job round robin
+			count := i % len(workers)
+			fmt.Printf("i-%d Count-%d Workers# %d \n", i, count, len(workers))
+			workers[count] <- jobData{
+				idx: i,
+				job: j,
+			}
+
+		}
+
+	} else {
+		for i, j := range s.jobs {
 			// no limit
 			go func(idx int, job job) {
 				val := job.lazyFn(job.args...)
@@ -78,31 +96,37 @@ func (s *LazyScheduler) Run() []Result {
 	}
 
 	for i := 0; i < s.Size(); i++ {
-		r := <- out
+		r := <-out
 		res[r.idx] = Result{Value: r.value, Err: r.err}
 	}
 
 	return res
 }
 
-
 type jobData struct {
 	idx int
 	job
 }
-// read only chang
-type workerJobCh <-chan jobData
 
-func createWorker(in workerJobCh, out resultChan, exit chan struct{}) {
-	for {
-		select {
-			case data := <- in:
+// read only chang
+type workerJobCh chan jobData
+
+func createWorker(out resultChan, exit chan struct{}) workerJobCh {
+	in := make(workerJobCh)
+	workerId := uuid.New().String()
+	fmt.Printf("Wrk number %s: created \n", workerId)
+	go func(wid string) {
+		for {
+			select {
+			case data := <-in:
+				fmt.Printf("Wrk number %s: processing job %v \n", workerId, data)
 				val := data.lazyFn(data.args...)
 				res := jobResult{idx: data.idx, value: val, err: nil}
 				out <- res
-			case <- exit:
+			case <-exit:
 				return
+			}
 		}
-	}
+	}(workerId)
+	return in
 }
-

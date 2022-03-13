@@ -1,8 +1,10 @@
-package synchronous
+package synchronous_test
 
 import (
-	"github.com/stretchr/testify/assert"
+	. "go-lazy-scheduler/scheduler/synchronous"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestScheduler_ShouldAddFunctionsLazily(t *testing.T) {
@@ -20,12 +22,11 @@ func TestScheduler_ShouldAddFunctionsLazily(t *testing.T) {
 	}
 
 	s := New()
-	s.Add(failFn, 1,2,3)
-	s.Add(add, 1,1,1)
+	s.Add(failFn, 1, 2, 3)
+	s.Add(add, 1, 1, 1)
 
 	assert.Equal(t, s.Size(), 2)
 }
-
 
 func TestLazyScheduler_ShouldExecuteFunctionsInScheduledOrder(t *testing.T) {
 	add := func(n ...int) int {
@@ -45,10 +46,10 @@ func TestLazyScheduler_ShouldExecuteFunctionsInScheduledOrder(t *testing.T) {
 	}
 
 	s := New()
-	s.Add(add,2,4,98)
-	s.Add(add,54,22, 29)
-	s.Add(multiply, 2,2,2,2)
-	s.Add(multiply,3,7)
+	s.Add(add, 2, 4, 98)
+	s.Add(add, 54, 22, 29)
+	s.Add(multiply, 2, 2, 2, 2)
+	s.Add(multiply, 3, 7)
 
 	got := s.Run()
 
@@ -63,15 +64,16 @@ func TestLazyScheduler_ShouldExecuteFunctionsInScheduledOrder(t *testing.T) {
 
 // run `go test -bench=.` in
 func BenchmarkLazyScheduler1000Jobs(b *testing.B) {
-	LazySchedulerBenchmark(b,1000)
+	LazySchedulerBenchmark(b, 1000)
 }
 
 func BenchmarkLazyScheduler10000Jobs(b *testing.B) {
-	LazySchedulerBenchmark(b,10000)
+	LazySchedulerBenchmark(b, 10000)
 }
 
 // capture results globally to avoid optimization
-var results = make([]Result,0)
+var results = make([]Result, 0)
+
 func LazySchedulerBenchmark(b *testing.B, count int) {
 	s := New()
 	add := func(n ...int) int {
@@ -82,7 +84,7 @@ func LazySchedulerBenchmark(b *testing.B, count int) {
 		return res
 	}
 	for i := 0; i < count; i++ {
-		s.Add(add, 5,5,5)
+		s.Add(add, 5, 5, 5)
 	}
 	// Our terminal Go will pass a variable `N` into this function numerous times until it gets a relatively consistent result
 	for i := 0; i < b.N; i++ {
