@@ -1,7 +1,7 @@
 package synchronous_test
 
 import (
-	. "go-lazy-scheduler/scheduler/synchronous"
+	. "go-lazy-scheduler/scheduler/pre1_18/waitgroup"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

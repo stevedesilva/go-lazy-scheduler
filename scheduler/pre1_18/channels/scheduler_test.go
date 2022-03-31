@@ -1,7 +1,7 @@
 package scheduler_test
 
 import (
-	. "go-lazy-scheduler/scheduler/channels"
+	. "go-lazy-scheduler/scheduler/pre1_18/channels"
 	"runtime"
 	"testing"
 	"time"
