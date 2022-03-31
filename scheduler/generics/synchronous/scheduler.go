@@ -10,6 +10,12 @@ package synchronous
 //	Run() []Result[T]
 //}
 
+type Scheduler[T comparable] interface {
+	Size() int
+	Add(fn func(n ...T) T, args ...T)
+	Run() []Result[T]
+}
+
 type Result[T comparable] struct {
 	Value T
 	Err   error
@@ -19,8 +25,8 @@ type LazyScheduler[T comparable] struct {
 	jobs []job[T]
 }
 
-//type LazyFunc[T comparable] func(n ...T) T
-//
+type LazyFunc[T comparable] func(n ...T) T
+
 //type job[T comparable] struct {
 //	lazyFn LazyFunc[T]
 //	args   []T
@@ -31,18 +37,17 @@ type job[T comparable] struct {
 	args   []T
 }
 
-//
-//func New[T comparable]() Scheduler[T] {
-//	return &LazyScheduler[T]{
-//		jobs: []job[T]{},
-//	}
-//}
-
-func New[T comparable]() *LazyScheduler[T] {
+func New[T comparable]() Scheduler[T] {
 	return &LazyScheduler[T]{
 		jobs: []job[T]{},
 	}
 }
+
+//func New[T comparable]() *LazyScheduler[T] {
+//	return &LazyScheduler[T]{
+//		jobs: []job[T]{},
+//	}
+//}
 
 func (s *LazyScheduler[T]) Size() int {
 	return len(s.jobs)

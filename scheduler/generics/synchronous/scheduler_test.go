@@ -1,6 +1,7 @@
 package synchronous
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,12 +20,19 @@ func TestScheduler_ShouldAddFunctionsLazily(t *testing.T) {
 		t.Errorf("Fuction should not be called when added")
 		return 0
 	}
+	var funcMal LazyFunc[int] = func(num ...int) int {
+		return 0
+	}
 
 	s := New[int]()
 	s.Add(failFn, 1, 2, 3)
 	s.Add(add, 1, 1, 1)
+	s.Add(funcMal, 1, 1, 1)
 
-	assert.Equal(t, s.Size(), 2)
+	assert.Equal(t, s.Size(), 3)
+
+	s.Add(funcMal, 2, 3, 4)
+
 }
 
 func TestLazyScheduler_ShouldExecuteFunctionsInScheduledOrderWithIntValues(t *testing.T) {
@@ -92,6 +100,24 @@ func TestLazyScheduler_ShouldExecuteFunctionsInScheduledOrderWithFloatValues(t *
 	assertion.Equal(105.0, got[1].Value)
 	assertion.Equal(16.0, got[2].Value)
 	assertion.Equal(21.0, got[3].Value)
+
+}
+
+func TestLazyScheduler_ShouldExecuteFunctionsInScheduledOrderWithString(t *testing.T) {
+	add := func(n ...string) string {
+		return strings.Join(n, ",")
+	}
+
+	s := New[string]()
+	s.Add(add, "One", "Two", "Three")
+	s.Add(add, "do", "ray", "me")
+
+	got := s.Run()
+
+	assertion := assert.New(t)
+	assertion.Equal(2, s.Size())
+	assertion.Equal("One,Two,Three", got[0].Value)
+	assertion.Equal("do,ray,me", got[1].Value)
 
 }
 
