@@ -1,49 +1,49 @@
 package synchronous
 
-//type comparable interface {
-//	~int | ~float64 | ~string
-//}
+type permittedValues interface {
+	~int | ~float64 | ~string
+}
 
-//type Scheduler[T comparable] interface {
+//type Scheduler[T permittedValues] interface {
 //	Size() int
 //	Add(fn LazyFunc, args ...T)
 //	Run() []Result[T]
 //}
 
-type Scheduler[T comparable] interface {
+type Scheduler[T permittedValues] interface {
 	Size() int
 	Add(fn func(n ...T) T, args ...T)
 	Run() []Result[T]
 }
 
-type Result[T comparable] struct {
+type Result[T permittedValues] struct {
 	Value T
 	Err   error
 }
 
-type LazyScheduler[T comparable] struct {
+type LazyScheduler[T permittedValues] struct {
 	jobs []job[T]
 }
 
-type LazyFunc[T comparable] func(n ...T) T
+type LazyFunc[T permittedValues] func(n ...T) T
 
-//type job[T comparable] struct {
+//type job[T permittedValues] struct {
 //	lazyFn LazyFunc[T]
 //	args   []T
 //}
 
-type job[T comparable] struct {
+type job[T permittedValues] struct {
 	lazyFn func(n ...T) T
 	args   []T
 }
 
-func New[T comparable]() Scheduler[T] {
+func New[T permittedValues]() Scheduler[T] {
 	return &LazyScheduler[T]{
 		jobs: []job[T]{},
 	}
 }
 
-//func New[T comparable]() *LazyScheduler[T] {
+//func New[T permittedValues]() *LazyScheduler[T] {
 //	return &LazyScheduler[T]{
 //		jobs: []job[T]{},
 //	}
